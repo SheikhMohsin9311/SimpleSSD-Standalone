@@ -126,7 +126,7 @@ LONG WINAPI exceptionHandler(LPEXCEPTION_POINTERS pExceptionInfo) {
 
 #define FRAMECOUNT 32
 
-static uint8_t stack[SIGSTKSZ * 2];
+static uint8_t stack[65536];
 
 void print_backtrace();
 
