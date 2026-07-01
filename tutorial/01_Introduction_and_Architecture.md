@@ -17,6 +17,9 @@ The simulator has an event engine that maintains a queue of future events. For e
 
 The simulator jumps directly from event to event without wasting real CPU time waiting. This allows it to simulate events that take milliseconds (like NAND erase) or nanoseconds (like DRAM access) efficiently.
 
+What is a real wall clock time?
+
+
 ## The Big Mental Model: The Pipeline
 
 Think of the simulator as a pipeline. Every request flows down from the workload generator, through various layers, into the simulated physical NAND flash, and back up.

@@ -20,6 +20,7 @@
 #include "bil/entry.hh"
 
 #include <cmath>
+#include <iostream>
 
 #include "bil/interface.hh"
 #include "bil/noop_scheduler.hh"
@@ -65,6 +66,9 @@ void BlockIOEntry::submitIO(BIO &bio) {
 
   io_count++;
   bio.submittedAt = engine.getCurrentTick();
+
+  std::cerr << "[BIL] submitIO id=" << bio.id << " offset=" << bio.offset
+            << " length=" << bio.length << std::endl;
 
   ioQueue.push_back(bio);
   copy.callback = callback;

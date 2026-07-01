@@ -1,0 +1,97 @@
+SimpleSSD Standalone v2.0
+********** Begin of simulation **********
+Periodic log printout @ tick 1051107540367
+read.request_count                      	0.000000            	Read request count
+read.bytes                              	0.000000            	Read data size in byte
+read.busy                               	0.000000            	Device busy time when read
+write.request_count                     	65536.000000        	Write request count
+write.bytes                             	268435456.000000    	Write data size in byte
+write.busy                              	569455372867.000000 	Device busy time when write
+request_count                           	65536.000000        	Total request count
+bytes                                   	268435456.000000    	Total data size in byte
+busy                                    	569455372867.000000 	Total device busy time
+icl.generic_cache.read.request_count    	0.000000            	Read request count
+icl.generic_cache.read.from_cache       	0.000000            	Read requests that served from cache
+icl.generic_cache.write.request_count   	65536.000000        	Write request count
+icl.generic_cache.write.to_cache        	64595.000000        	Write requests that served to cache
+dram.energy                             	35513495066.678757  	Total energy comsumed by embedded DRAM (pJ)
+dram.power                              	33.381496           	Total power comsumed by embedded DRAM (mW)
+dram.read.request_count                 	60224.000000        	Read request count
+dram.read.bytes                         	481792.000000       	Read data size in byte
+dram.write.request_count                	125760.000000       	Write request count
+dram.write.bytes                        	268917248.000000    	Write data size in byte
+dram.request_count                      	185984.000000       	Total request count
+dram.bytes                              	269399040.000000    	Total data size in byte
+ftl.page_mapping.gc.count               	0.000000            	Total GC count
+ftl.page_mapping.gc.reclaimed_blocks    	0.000000            	Total reclaimed blocks in GC
+ftl.page_mapping.gc.superpage_copies    	0.000000            	Total copied valid superpages during GC
+ftl.page_mapping.gc.page_copies         	0.000000            	Total copied valid pages during GC
+ftl.page_mapping.wear_leveling          	-1.000000           	Wear-leveling factor
+pal.energy.read                         	0.000000            	Consumed energy by NAND read operation (uJ)
+pal.energy.program                      	4508355.145280      	Consumed energy by NAND program operation (uJ)
+pal.energy.erase                        	0.000000            	Consumed energy by NAND erase operation (uJ)
+pal.energy.total                        	4508355.145280      	Total consumed energy by NAND (uJ)
+pal.power                               	4289147.372785      	Average power consumed by NAND (uW)
+pal.read.count                          	0.000000            	Total read operation count
+pal.program.count                       	60224.000000        	Total program operation count
+pal.erase.count                         	0.000000            	Total erase operation count
+pal.read.bytes                          	0.000000            	Total read operation bytes
+pal.program.bytes                       	986710016.000000    	Total program operation bytes
+pal.erase.bytes                         	0.000000            	Total erase operation bytes
+pal.read.time.dma0.wait                 	0.000000            	Average dma0 wait time of read
+pal.read.time.dma0                      	0.000000            	Average dma0 time of read
+pal.read.time.mem                       	0.000000            	Average memory operation time of read
+pal.read.time.dma1.wait                 	0.000000            	Average dma1 wait time of read
+pal.read.time.dma1                      	0.000000            	Average dma1 time of read
+pal.read.time.total                     	0.000000            	Average time of read
+pal.program.time.dma0.wait              	2648963143.648645   	Average dma0 wait time of program
+pal.program.time.dma0                   	39079188.000000     	Average dma0 time of program
+pal.program.time.mem                    	899574920.297556    	Average memory operation time of program
+pal.program.time.dma1.wait              	16689.000000        	Average dma1 wait time of program
+pal.program.time.dma1                   	2384.000000         	Average dma1 time of program
+pal.program.time.total                  	3587636324.946201   	Average time of program
+pal.erase.time.dma0.wait                	0.000000            	Average dma0 wait time of erase
+pal.erase.time.dma0                     	0.000000            	Average dma0 time of erase
+pal.erase.time.mem                      	0.000000            	Average memory operation time of erase
+pal.erase.time.dma1.wait                	0.000000            	Average dma1 wait time of erase
+pal.erase.time.dma1                     	0.000000            	Average dma1 time of erase
+pal.erase.time.total                    	0.000000            	Average time of erase
+pal.channel.time.active                 	39081572.000000     	Average active time of all channels
+pal.die.time.active                     	938673181.297555    	Average active time of all dies
+cpu.hil0.busy                           	97812480000.000000  	CPU for HIL core 0 busy ticks
+cpu.hil0.insts.branch                   	3997696.000000      	CPU for HIL core 0 executed branch instructions
+cpu.hil0.insts.load                     	20447232.000000     	CPU for HIL core 0 executed load instructions
+cpu.hil0.insts.store                    	6684672.000000      	CPU for HIL core 0 executed store instructions
+cpu.hil0.insts.arithmetic               	7864320.000000      	CPU for HIL core 0 executed arithmetic instructions
+cpu.hil0.insts.fp                       	0.000000            	CPU for HIL core 0 executed floating point instructions
+cpu.hil0.insts.others                   	131072.000000       	CPU for HIL core 0 executed other instructions
+cpu.icl0.busy                           	178421760000.000000 	CPU for ICL core 0 busy ticks
+cpu.icl0.insts.branch                   	5898240.000000      	CPU for ICL core 0 executed branch instructions
+cpu.icl0.insts.load                     	38273024.000000     	CPU for ICL core 0 executed load instructions
+cpu.icl0.insts.store                    	4587520.000000      	CPU for ICL core 0 executed store instructions
+cpu.icl0.insts.arithmetic               	22216704.000000     	CPU for ICL core 0 executed arithmetic instructions
+cpu.icl0.insts.fp                       	0.000000            	CPU for ICL core 0 executed floating point instructions
+cpu.icl0.insts.others                   	393216.000000       	CPU for ICL core 0 executed other instructions
+cpu.ftl0.busy                           	184737120000.000000 	CPU for FTL core 0 busy ticks
+cpu.ftl0.insts.branch                   	8792704.000000      	CPU for FTL core 0 executed branch instructions
+cpu.ftl0.insts.load                     	30834688.000000     	CPU for FTL core 0 executed store instructions
+cpu.ftl0.insts.store                    	4035008.000000      	CPU for FTL core 0 executed load instructions
+cpu.ftl0.insts.arithmetic               	24631616.000000     	CPU for FTL core 0 executed arithmetic instructions
+cpu.ftl0.insts.fp                       	5480384.000000      	CPU for FTL core 0 executed floating point instructions
+cpu.ftl0.insts.others                   	120448.000000       	CPU for FTL core 0 executed other instructions
+End of log @ tick 1051107540367
+[2K                                                           *** Statistics of Request Generator ***
+Tick: 1051107540367
+Time (ps): 0 - 1051107540367 (1051107540367)
+I/O (bytes): 268435456 (255383436.699802 B/s)
+I/O (counts): 65536 (Read: 0, Write: 65536)
+*** End of statistics ***
+*** Statistics of Block I/O Entry ***
+Latency (ns): min=4915.080000, max=7994849.326000, avg=331378.734224, stdev=499120.977953
+*** End of statistics ***
+*** Statistics of Event Engine ***
+Simulation Tick (ps): 1051107540367
+Host time duration (sec): 6.045602
+Event handled: 196634 (32525.132514 ops)
+*** End of statistics ***
+End of simulation @ tick 1051107540367
