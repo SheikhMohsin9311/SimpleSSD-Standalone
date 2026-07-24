@@ -36,3 +36,7 @@ compile_flags.txt
 # VSCode Specific
 .vscode/
 *.code-workspace
+
+outputs/
+results/
+.sim_tmp_*/

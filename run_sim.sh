@@ -1,17 +1,32 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+# Simple script to run SimpleSSD simulation and save clean results under the outputs folder
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$ROOT_DIR"
+# Create outputs folder if it doesn't exist
+mkdir -p outputs
 
-OUTPUT_DIR="./outputs"
-OUTPUT_FILE="$OUTPUT_DIR/${1:-run_$(date +%Y%m%d_%H%M%S).txt}"
+OUTFILE="outputs/${1:-simulation.log}"
+PREFIX="temp_stats_$$"
 
-mkdir -p ./result
-mkdir -p "$OUTPUT_DIR"
+echo "Running SimpleSSD standalone simulation..."
+echo "All clean outputs (subsystem metrics and stats) will be stored in: $OUTFILE"
 
-cmake -DDEBUG_BUILD=on
-make -j 12
-./simplessd-standalone ./config/sample.cfg ./simplessd/config/sample.cfg ./result >> "$OUTPUT_FILE"
+# 1. Run simulation, filtering out the verbose [BIL] submitIO spam
+./simplessd-standalone config/sample.cfg simplessd/config/sample.cfg "$PREFIX" 2>&1 | grep -v "submitIO" > "$OUTFILE"
 
-echo "Simulation output appended to: $OUTPUT_FILE"
+# 2. Append all generated subsystem metric files to the single log file
+echo "" >> "$OUTFILE"
+echo "==========================================================" >> "$OUTFILE"
+echo "                DETAILED SUBSYSTEM METRICS" >> "$OUTFILE"
+echo "==========================================================" >> "$OUTFILE"
+
+for f in ${PREFIX}_*.txt; do
+    if [ -f "$f" ]; then
+        component=$(basename "$f" | sed "s/${PREFIX}_//; s/\.txt//; tr '[a-z]' '[A-Z]'")
+        echo "" >> "$OUTFILE"
+        echo "--- $component STATS ---" >> "$OUTFILE"
+        cat "$f" >> "$OUTFILE"
+        rm -f "$f"
+    fi
+done
+
+echo "Simulation complete!"
