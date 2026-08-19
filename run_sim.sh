@@ -1,32 +1,51 @@
-#!/bin/bash
-# Simple script to run SimpleSSD simulation and save clean results under the outputs folder
+#!/usr/bin/env bash
+# Run one SimpleSSD simulation and save the result under outputs/.
 
-# Create outputs folder if it doesn't exist
-mkdir -p outputs
+set -u
 
 OUTFILE="outputs/${1:-simulation.log}"
-PREFIX="temp_stats_$$"
+OUTDIR="$(pwd)/outputs"
+STATS_FILE="$OUTDIR/sim_stats.tmp.log"
+SUMMARY_FILE="$OUTDIR/run_summary.tmp.log"
+CONFIG_FILE="$OUTDIR/standalone.tmp.cfg"
+
+mkdir -p "$OUTDIR"
+rm -f "$STATS_FILE" "$SUMMARY_FILE" "$CONFIG_FILE"
 
 echo "Running SimpleSSD standalone simulation..."
-echo "All clean outputs (subsystem metrics and stats) will be stored in: $OUTFILE"
+echo "Output: $OUTFILE"
 
-# 1. Run simulation, filtering out the verbose [BIL] submitIO spam
-./simplessd-standalone config/sample.cfg simplessd/config/sample.cfg "$PREFIX" 2>&1 | grep -v "submitIO" > "$OUTFILE"
+sed "s|^LogFile *=.*|LogFile = $STATS_FILE|" \
+  config/sample.cfg > "$CONFIG_FILE"
 
-# 2. Append all generated subsystem metric files to the single log file
-echo "" >> "$OUTFILE"
-echo "==========================================================" >> "$OUTFILE"
-echo "                DETAILED SUBSYSTEM METRICS" >> "$OUTFILE"
-echo "==========================================================" >> "$OUTFILE"
+{
+  echo "=== SimpleSSD Simulation ==="
+  echo "Started: $(date)"
+  echo "Config : config/sample.cfg + simplessd/config/sample.cfg"
+  echo ""
+} > "$OUTFILE"
 
-for f in ${PREFIX}_*.txt; do
-    if [ -f "$f" ]; then
-        component=$(basename "$f" | sed "s/${PREFIX}_//; s/\.txt//; tr '[a-z]' '[A-Z]'")
-        echo "" >> "$OUTFILE"
-        echo "--- $component STATS ---" >> "$OUTFILE"
-        cat "$f" >> "$OUTFILE"
-        rm -f "$f"
-    fi
-done
+./simplessd-standalone \
+  "$CONFIG_FILE" \
+  simplessd/config/sample.cfg \
+  outputs/stats > "$SUMMARY_FILE" 2>&1
 
-echo "Simulation complete!"
+{
+  echo "=== SUBSYSTEM STATS ==="
+  if [ -f "$STATS_FILE" ]; then
+    cat "$STATS_FILE"
+  else
+    echo "(WARNING: stats log not found)"
+  fi
+
+  echo ""
+  echo "=== RUN SUMMARY ==="
+  sed -e 's/\x1b\[2K *\r//g' -e 's/\r$//' "$SUMMARY_FILE"
+
+  echo ""
+  echo "Finished: $(date)"
+} >> "$OUTFILE"
+
+rm -f "$STATS_FILE" "$SUMMARY_FILE" "$CONFIG_FILE"
+
+echo "Done. Results in: $OUTFILE"

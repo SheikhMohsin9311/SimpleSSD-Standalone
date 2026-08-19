@@ -107,14 +107,17 @@ launch_job() {
     ./simplessd-standalone \
       "$tmp/standalone.cfg" \
       "$tmp/simplessd.cfg" \
-      "$tmp/stats" >> "$outfile" 2>&1
+      "$tmp/stats" > "$tmp/run_summary.log" 2>&1
 
     # Append per-subsystem stat files
-    echo "" >> "$outfile"
     echo "=== SUBSYSTEM STATS ===" >> "$outfile"
     for f in "$tmp"/stats_*.txt; do
       [ -f "$f" ] && cat "$f" >> "$outfile"
     done
+
+    echo "" >> "$outfile"
+    echo "=== RUN SUMMARY ===" >> "$outfile"
+    sed -e 's/\x1b\[2K *\r//g' -e 's/\r$//' "$tmp/run_summary.log" >> "$outfile"
 
     echo "" >> "$outfile"
     echo "Finished : $(date)" >> "$outfile"
