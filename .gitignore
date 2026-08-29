@@ -37,6 +37,14 @@ compile_flags.txt
 .vscode/
 *.code-workspace
 
+# Python/Jupyter local environment
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
 outputs/
 results/
 .sim_tmp_*/
