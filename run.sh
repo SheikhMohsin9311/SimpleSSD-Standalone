@@ -6,6 +6,8 @@
 #   bash run.sh                  # single run with settings from SECTION 1
 #   TEST_MODE=true bash run.sh   # prefetch validation test (sequential read)
 #   SWEEP_MODE=true bash run.sh  # sweep all combinations from SECTION 2
+#   bash run.sh kill             # forcefully terminate all running simulations
+#   bash run.sh clean            # remove all orphaned .sim_tmp_ directories
 #
 # OUTPUT
 #   outputs/<label>.txt   -- full subsystem stats + run summary
@@ -95,6 +97,30 @@ SWEEP_EVICT_POLICY=0
 # -----------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# --- Utilities ---
+if [[ "${1:-}" == "kill" ]]; then
+  echo "Killing all active SimpleSSD simulators and background sweeps..."
+  pkill -9 -f "simplessd-standalone" 2>/dev/null || true
+  killall -9 simplessd-standalone 2>/dev/null || true
+  
+  # Kill all other run.sh scripts except this one
+  for pid in $(pgrep -f "bash.*run.sh" 2>/dev/null); do
+    if [[ "$pid" != "$$" ]]; then
+      kill -9 "$pid" 2>/dev/null || true
+    fi
+  done
+  echo "Done."
+  exit 0
+fi
+
+if [[ "${1:-}" == "clean" ]]; then
+  echo "Removing orphaned .sim_tmp_* directories..."
+  rm -rf "$SCRIPT_DIR"/.sim_tmp_*
+  echo "Done."
+  exit 0
+fi
+
 BINARY="$SCRIPT_DIR/simplessd-standalone"
 BASE_CFG="$SCRIPT_DIR/config/sample.cfg"
 SSD_CFG="$SCRIPT_DIR/simplessd/config/sample.cfg"
