@@ -45,7 +45,7 @@ TEST_MODE="${TEST_MODE:-false}"
 
 # MAX_PARALLEL: Number of simulator instances to run simultaneously.
 # Options: 1 (Sequential), 4-16 (Depending on available CPU cores and RAM).
-MAX_PARALLEL=8
+MAX_PARALLEL=24
 
 # SWEEP_WORKLOADS: The I/O access patterns to simulate.
 # Options: "read" (Sequential Read), "write" (Sequential Write),
