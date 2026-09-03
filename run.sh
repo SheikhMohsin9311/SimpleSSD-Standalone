@@ -292,8 +292,8 @@ if [[ "$SWEEP_MODE" == "true" ]]; then
   echo "  Max parallel : $MAX_PARALLEL"
   echo ""
 
-  # Calculate total jobs
-  TOTAL_JOBS=0
+  # Calculate total jobs and build jobs array
+  jobs_to_run=()
   for ios in "${SWEEP_IO_SIZES[@]}"; do
     for wl in "${SWEEP_WORKLOADS[@]}"; do
       if [[ "$wl" == "randrw" ]]; then mixes=( "${SWEEP_RW_MIX_READ[@]}" ); else mixes=( "0.5" ); fi
@@ -304,7 +304,7 @@ if [[ "$SWEEP_MODE" == "true" ]]; then
               for pref in "${SWEEP_PREFETCH[@]}"; do
                 if [[ "$pref" == "false" ]]; then windows=( "${SWEEP_PREFETCH_WINDOWS[0]}" ); else windows=( "${SWEEP_PREFETCH_WINDOWS[@]}" ); fi
                 for win in "${windows[@]}"; do
-                  TOTAL_JOBS=$((TOTAL_JOBS + 1))
+                  jobs_to_run+=("$wl $cmt_b $bs $pol $pref $win $SWEEP_FILL_RATIO $ios $SWEEP_IO_DEPTH $rwmix $SWEEP_EVICT_POLICY")
                 done
               done
             done
@@ -314,6 +314,7 @@ if [[ "$SWEEP_MODE" == "true" ]]; then
     done
   done
 
+  TOTAL_JOBS=${#jobs_to_run[@]}
   echo "  Total Jobs   : $TOTAL_JOBS"
   echo ""
 
