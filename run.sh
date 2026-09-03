@@ -296,16 +296,18 @@ if [[ "$SWEEP_MODE" == "true" ]]; then
   # Calculate total jobs and build jobs array
   jobs_to_run=()
   for ios in "${SWEEP_IO_SIZES[@]}"; do
-    for wl in "${SWEEP_WORKLOADS[@]}"; do
-      if [[ "$wl" == "randrw" ]]; then mixes=( "${SWEEP_RW_MIX_READ[@]}" ); else mixes=( "0.5" ); fi
-      for rwmix in "${mixes[@]}"; do
-        for cmt_b in "${SWEEP_CMT_BYTES[@]}"; do
-          for bs in "${SWEEP_BLOCK_SIZES[@]}"; do
-            for pol in "${SWEEP_CMT_POLICIES[@]}"; do
-              for pref in "${SWEEP_PREFETCH[@]}"; do
-                if [[ "$pref" == "false" ]]; then windows=( "${SWEEP_PREFETCH_WINDOWS[0]}" ); else windows=( "${SWEEP_PREFETCH_WINDOWS[@]}" ); fi
-                for win in "${windows[@]}"; do
-                  jobs_to_run+=("$wl $cmt_b $bs $pol $pref $win $SWEEP_FILL_RATIO $ios $SWEEP_IO_DEPTH $rwmix $SWEEP_EVICT_POLICY")
+    for fill in "${SWEEP_FILL_RATIOS[@]}"; do
+      for wl in "${SWEEP_WORKLOADS[@]}"; do
+        if [[ "$wl" == "randrw" ]]; then mixes=( "${SWEEP_RW_MIX_READ[@]}" ); else mixes=( "0.5" ); fi
+        for rwmix in "${mixes[@]}"; do
+          for cmt_b in "${SWEEP_CMT_BYTES[@]}"; do
+            for bs in "${SWEEP_BLOCK_SIZES[@]}"; do
+              for pol in "${SWEEP_CMT_POLICIES[@]}"; do
+                for pref in "${SWEEP_PREFETCH[@]}"; do
+                  if [[ "$pref" == "false" ]]; then windows=( "${SWEEP_PREFETCH_WINDOWS[0]}" ); else windows=( "${SWEEP_PREFETCH_WINDOWS[@]}" ); fi
+                  for win in "${windows[@]}"; do
+                    jobs_to_run+=("$wl $cmt_b $bs $pol $pref $win $fill $ios $SWEEP_IO_DEPTH $rwmix $SWEEP_EVICT_POLICY")
+                  done
                 done
               done
             done
