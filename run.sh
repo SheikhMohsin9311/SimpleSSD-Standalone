@@ -50,11 +50,11 @@ MAX_PARALLEL=8
 # SWEEP_WORKLOADS: The I/O access patterns to simulate.
 # Options: "read" (Sequential Read), "write" (Sequential Write),
 #          "randread" (Random Read), "randwrite" (Random Write), "randrw" (Mixed Random).
-SWEEP_WORKLOADS=( "read" "randread" "randrw" )
+SWEEP_WORKLOADS=( "read" "write" "randread" "randwrite" "randrw" )
 
 # SWEEP_CMT_BYTES: Capacity of the Cached Mapping Table in bytes.
 # Options: Any integer. Common: 524288 (512KiB), 2097152 (2MiB), 16777216 (16MiB), etc.
-SWEEP_CMT_BYTES=( 524288 1048576 2097152 4194304 8388608 16777216 33554432 )
+SWEEP_CMT_BYTES=( 67108864 268435456 1073741824 2147483648 )
 
 # SWEEP_BLOCK_SIZES: Request size of the host I/O.
 # Options: "4K", "8K", "16K", "32K", "64K", "128K", etc. (Must be multiplier of NAND page).
@@ -74,11 +74,11 @@ SWEEP_PREFETCH_WINDOWS=( 512 )
 
 # SWEEP_FILL_RATIO: The initial capacity utilization of the SSD before the test begins.
 # Options: 0.0 (Empty SSD) to 1.0 (Completely full, forces immediate GC and steady-state).
-SWEEP_FILL_RATIO=1.0
+SWEEP_FILL_RATIOS=( 0.8 1.0 )
 
 # SWEEP_IO_SIZES: Total amount of I/O data to issue during the simulation.
 # Options: "1G", "4G", "16G", "64G", etc. Larger sizes ensure steady-state cache behavior.
-SWEEP_IO_SIZES=( "4G" "16G" )
+SWEEP_IO_SIZES=( "1T" "4T" )
 
 # SWEEP_IO_DEPTH: Number of outstanding asynchronous I/O requests.
 # Options: 1 (Synchronous), 32 (Standard NVMe), 128 (Heavy enterprise load).
@@ -86,7 +86,7 @@ SWEEP_IO_DEPTH=32
 
 # SWEEP_RW_MIX_READ: Percentage of read operations (only applies if workload is "randrw").
 # Options: 0.0 to 1.0. (e.g., 0.7 = 70% Reads, 30% Writes).
-SWEEP_RW_MIX_READ=( 0.3 0.5 0.7 0.9 )
+SWEEP_RW_MIX_READ=( 0.3 0.5 0.7 )
 
 # SWEEP_EVICT_POLICY: Victim block selection policy for NAND Garbage Collection.
 # Options: 0 (Greedy), 1 (Cost-Benefit), 2 (Random), 3 (d-Choice).
@@ -166,6 +166,7 @@ run_one() {
     "$BASE_CFG" > "$tmp/standalone.cfg"
 
   sed \
+    -e "s|^Block *=.*|Block = 2048|" \
     -e "s|^CMTCapacityBytes *=.*|CMTCapacityBytes = $cmt_b|" \
     -e "s|^CMTCapacityRatio *=.*|CMTCapacityRatio = 0.0|" \
     -e "s|^CMTPolicy *=.*|CMTPolicy = $pol|" \
