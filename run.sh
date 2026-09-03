@@ -31,7 +31,7 @@ FILL_RATIO="${FILL_RATIO:-1.0}"      # warm-up fill level  (0.0 to 1.0)
 EVICT_POLICY="${EVICT_POLICY:-0}"    # GC victim selection: 0=greedy 1=cost-benefit 2=random 3=d-choice
 
 PREFETCH_ENABLE="${PREFETCH_ENABLE:-false}" # CMT spatial prefetch: true | false
-PREFETCH_WINDOW="${PREFETCH_WINDOW:-512}"   # LPNs per aligned window (only used if PREFETCH_ENABLE=true)
+PREFETCH_WINDOW="${PREFETCH_WINDOW:-512}"   # LPNs per translation page (fixed)
 
 OUTPUT_DIR="${OUTPUT_DIR:-outputs}"         # directory to write .log files into
 PROGRESS_INTERVAL="${PROGRESS_INTERVAL:-5}" # Live progress update interval in seconds
@@ -68,8 +68,8 @@ SWEEP_CMT_POLICIES=( 0 1 )
 # Options: "false" (Disabled), "true" (Enabled).
 SWEEP_PREFETCH=( "false" "true" )
 
-# SWEEP_PREFETCH_WINDOWS: Number of LPNs to speculatively fetch on a demand miss.
-# Options: Any integer. (e.g., 512 exactly aligns with one 4KB physical translation page).
+# SWEEP_PREFETCH_WINDOWS: LPNs to install from one translation-page read.
+# Fixed at 512 (one mapping page). Do not derive from PAL PageSize.
 SWEEP_PREFETCH_WINDOWS=( 512 )
 
 # SWEEP_FILL_RATIO: The initial capacity utilization of the SSD before the test begins.
@@ -132,34 +132,13 @@ SSD_CFG="$SCRIPT_DIR/simplessd/config/sample.cfg"
 
 mkdir -p "$OUTPUT_DIR"
 
-# Convert size string (e.g. 4K, 2G, 512M) to bytes
-size_to_bytes() {
-  local val=$(echo "$1" | sed -E 's/([0-9]+)([A-Za-z]+)/\1 \2/')
-  local num=$(echo "$val" | awk '{print $1}')
-  local unit=$(echo "$val" | awk '{print $2}' | tr '[:lower:]' '[:upper:]' | head -c 1)
-
-  case "$unit" in
-    K) echo $(awk "BEGIN {printf \"%.0f\", $num * 1024}") ;;
-    M) echo $(awk "BEGIN {printf \"%.0f\", $num * 1024 * 1024}") ;;
-    G) echo $(awk "BEGIN {printf \"%.0f\", $num * 1024 * 1024 * 1024}") ;;
-    T) echo $(awk "BEGIN {printf \"%.0f\", $num * 1024 * 1024 * 1024 * 1024}") ;;
-    *) echo "$num" ;;
-  esac
-}
 
 make_label() {
-  local wl="$1" cmt_b="$2" bs="$3" pol="$4" pref="$5" win="$6" fill="$7" evict="$8" ios="$9" rwmix="${10}"
-  local pol_str="LRU"; [[ "$pol" == "1" ]] && pol_str="LFU"
-  local pref_str="PF_OFF"; [[ "$pref" == "true" ]] && pref_str="PF_ON_W${win}"
-  local size_str
-  if (( cmt_b < 1048576 )); then
-    size_str="$(( cmt_b / 1024 ))KiB"
-  else
-    size_str="$(( cmt_b / 1048576 ))MiB"
-  fi
-  local wl_str="$wl"
-  if [[ "$wl" == "randrw" ]]; then wl_str="${wl}_mix${rwmix}"; fi
-  echo "${wl_str}_${pol_str}_${pref_str}_${size_str}_${bs}_${ios}_fill${fill}_evict${evict}"
+  local p="LRU"; [ "$4" = "1" ] && p="LFU"
+  local pf="PF_OFF"; [ "$5" = "true" ] && pf="PF_ON_W$6"
+  local sz="$(( $2 / 1048576 ))MiB"; (( $2 < 1048576 )) && sz="$(( $2 / 1024 ))KiB"
+  local w="$1"; [ "$1" = "randrw" ] && w="${1}_mix${10}"
+  echo "${w}_${p}_${pf}_${sz}_$3_$9_fill$7_evict$8"
 }
 
 run_one() {
@@ -206,40 +185,7 @@ run_one() {
     > "$summary" 2>&1 || true &
   local sim_pid=$!
 
-  local io_bytes=$(size_to_bytes "$ios")
-  local blk_bytes=$(size_to_bytes "$bs")
-  local expected_ops=$(awk -v ib="$io_bytes" -v bb="$blk_bytes" 'BEGIN {printf "%.0f", ib / bb}')
   local start_time=$(date +%s)
-
-  # Live progress poller (only if we're not sweeping)
-  if [[ "$PROGRESS_INTERVAL" -lt 999999 ]]; then
-    while kill -0 $sim_pid 2>/dev/null; do
-      sleep "$PROGRESS_INTERVAL"
-
-      if [[ -f "$statsfile" && -s "$statsfile" ]]; then
-        local hits=$(grep "cmt.hits" "$statsfile" | tail -n1 | awk '{print $2}' | cut -d'.' -f1 || echo "0")
-        local misses=$(grep "cmt.misses" "$statsfile" | tail -n1 | awk '{print $2}' | cut -d'.' -f1 || echo "0")
-        local hr=$(grep "cmt.hit_rate" "$statsfile" | tail -n1 | awk '{printf "%.2f", $2}' || echo "0.00")
-        local acc=$(grep "prefetch_accuracy_percent" "$statsfile" | tail -n1 | awk '{printf "%.2f", $2}' || echo "0.00")
-        local ins=$(grep "prefetch_insertions" "$statsfile" | tail -n1 | awk '{print $2}' | cut -d'.' -f1 || echo "0")
-
-        local total_ops=$((hits + misses))
-        local pct="0.0"
-        if [[ "$expected_ops" -gt 0 ]]; then
-          pct=$(awk -v t="$total_ops" -v e="$expected_ops" 'BEGIN {printf "%.1f", (t / e) * 100}')
-          # Cap at 100.0%
-          if awk "BEGIN {exit !($pct > 100.0)}"; then pct="100.0"; fi
-        fi
-
-        local elapsed=$(($(date +%s) - start_time))
-        printf "\r\033[K[ %3ds ] Progress: %5.1f%% | CMT hit rate: %s%% | PF accuracy: %s%% | PF insertions: %s" \
-               "$elapsed" "$pct" "$hr" "$acc" "$ins"
-      fi
-    done
-
-    # Clear progress line
-    printf "\r\033[K"
-  fi
 
   wait $sim_pid
 
@@ -294,15 +240,42 @@ run_one() {
 }
 
 # ── Test mode ─────────────────────────────────────────────────────────────────
+# A/B invariants (same CMT size, fill, and I/O size):
+#   sequential read: PF_ON misses drop vs PF_OFF; accuracy should be high
+#   random read:     PF_ON may pollute more; writebacks must not explode
+#   sequential write (fill=1.0): GC misses must not drive prefetch_triggers
 if [[ "$TEST_MODE" == "true" ]]; then
-  echo "SimpleSSD -- PF validation test (Sequential Read)"
+  echo "SimpleSSD -- PF validation (sequential / random / GC-ish write)"
   echo ""
 
-  # Run A: PF OFF
-  run_one "read" "2097152" "4K" "0" "false" "512" "1.0" "2G" "32" "0.5" "0"
+  TEST_WINDOW="${PREFETCH_WINDOW:-512}"
+  TEST_CMT="${CMT_BYTES:-2097152}"
+  TEST_IOS="${IO_SIZE:-512M}"
 
-  # Run B: PF ON
-  run_one "read" "2097152" "4K" "0" "true" "512" "1.0" "2G" "32" "0.5" "0"
+  run_one "read"     "$TEST_CMT" "4K" "0" "false" "$TEST_WINDOW" "1.0" "$TEST_IOS" "32" "0.5" "0"
+  run_one "read"     "$TEST_CMT" "4K" "0" "true"  "$TEST_WINDOW" "1.0" "$TEST_IOS" "32" "0.5" "0"
+  run_one "randread" "$TEST_CMT" "4K" "0" "false" "$TEST_WINDOW" "1.0" "$TEST_IOS" "32" "0.5" "0"
+  run_one "randread" "$TEST_CMT" "4K" "0" "true"  "$TEST_WINDOW" "1.0" "$TEST_IOS" "32" "0.5" "0"
+  run_one "read"     "$TEST_CMT" "4K" "1" "false" "$TEST_WINDOW" "1.0" "$TEST_IOS" "32" "0.5" "0"
+  run_one "read"     "$TEST_CMT" "4K" "1" "true"  "$TEST_WINDOW" "1.0" "$TEST_IOS" "32" "0.5" "0"
+  run_one "write"    "$TEST_CMT" "4K" "0" "false" "$TEST_WINDOW" "1.0" "$TEST_IOS" "32" "0.5" "0"
+  run_one "write"    "$TEST_CMT" "4K" "0" "true"  "$TEST_WINDOW" "1.0" "$TEST_IOS" "32" "0.5" "0"
+
+  echo ""
+  echo "Checking prefetch stat invariants..."
+  for f in "$OUTPUT_DIR"/*.txt; do
+    ins=$(awk '/prefetch_insertions/ {print $2}' "$f" | cut -d. -f1)
+    if [[ "$f" == *"PF_OFF"* ]] && (( ins > 0 )); then
+      echo "FAIL: $f (PF_OFF has insertions)"
+    fi
+  done
+  seq_off=$(ls "$OUTPUT_DIR"/read_LRU_PF_OFF_*.txt 2>/dev/null | tail -n1 || true)
+  seq_on=$(ls "$OUTPUT_DIR"/read_LRU_PF_ON_*.txt 2>/dev/null | tail -n1 || true)
+  if [[ -n "$seq_off" && -n "$seq_on" ]]; then
+    moff=$(awk '/cmt.misses/ {print $2}' "$seq_off" | cut -d. -f1)
+    mon=$(awk '/cmt.misses/ {print $2}' "$seq_on" | cut -d. -f1)
+    (( mon >= moff )) && echo "FAIL: sequential misses did not drop ($moff -> $mon)" || echo "PASS A/B (sequential)"
+  fi
 
   echo ""
   echo "Test done."
@@ -377,33 +350,10 @@ if [[ "$SWEEP_MODE" == "true" ]]; then
   ) &
   POLLER_PID=$!
 
-  launched=0
-  for ios in "${SWEEP_IO_SIZES[@]}"; do
-    for wl in "${SWEEP_WORKLOADS[@]}"; do
-      if [[ "$wl" == "randrw" ]]; then mixes=( "${SWEEP_RW_MIX_READ[@]}" ); else mixes=( "0.5" ); fi
-      for rwmix in "${mixes[@]}"; do
-        for cmt_b in "${SWEEP_CMT_BYTES[@]}"; do
-          for bs in "${SWEEP_BLOCK_SIZES[@]}"; do
-            for pol in "${SWEEP_CMT_POLICIES[@]}"; do
-              for pref in "${SWEEP_PREFETCH[@]}"; do
-                if [[ "$pref" == "false" ]]; then
-                  windows=( "${SWEEP_PREFETCH_WINDOWS[0]}" )
-                else
-                  windows=( "${SWEEP_PREFETCH_WINDOWS[@]}" )
-                fi
-                for win in "${windows[@]}"; do
-                  while (( $(jobs -p | wc -l) >= MAX_PARALLEL + 1 )); do sleep 0.5; done
-                  PROGRESS_INTERVAL=999999 run_one "$wl" "$cmt_b" "$bs" "$pol" "$pref" "$win" \
-                          "$SWEEP_FILL_RATIO" "$ios" "$SWEEP_IO_DEPTH" \
-                          "$rwmix" "$SWEEP_EVICT_POLICY" &
-                  launched=$((launched + 1))
-                done
-              done
-            done
-          done
-        done
-      done
-    done
+  for job_args in "${jobs_to_run[@]}"; do
+    while (( $(jobs -p | wc -l) >= MAX_PARALLEL + 1 )); do sleep 0.5; done
+    # shellcheck disable=SC2086
+    run_one $job_args &
   done
 
   wait $POLLER_PID
